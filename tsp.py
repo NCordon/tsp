@@ -3,12 +3,12 @@
 
 # # Travelling Salesman Problem
 
-# In[399]:
+# In[2]:
 
 get_ipython().magic(u'matplotlib inline')
 
 
-# In[165]:
+# In[3]:
 
 from numpy import *
 from random import *
@@ -20,7 +20,7 @@ import re
 
 # Definimos una solución como una permutación con su coste
 
-# In[166]:
+# In[4]:
 
 class Route:
         
@@ -55,7 +55,7 @@ class Route:
 
 # Implementación de la clase que albergará los datos del problema
 
-# In[395]:
+# In[5]:
 
 class TSP:   
     
@@ -94,7 +94,7 @@ class TSP:
         improvement = True
         i=0
         
-        while(i<max_iter):
+        while i < max_iter:
             candidate = deepcopy(solution)
             candidate.change_edges()
             diff_cost = candidate.cost - solution.cost
@@ -114,8 +114,52 @@ class TSP:
         
         return best_solution
     
-    def tabu_search(self):
-        print ("prueba")
+    def tabu_search(self, max_iter):
+        """Número de ciudades"""
+        n = len(self.points)
+        
+        """Permutación"""
+        permutation = array(range(n))
+        shuffle(permutation)
+        candidate = Route(permutation, self.dist)
+        best_neighbour = deepcopy(candidate)
+        best_solution = deepcopy(candidate)
+        
+        """Parámetro del criterio de aspiración"""
+        tolerance = 1.2
+        
+        """Lista tabú de soluciones"""
+        tabu_list = []
+        
+        i=0
+        
+        while i < max_iter:
+            j = 0
+            
+            while j < n: 
+                candidate.change_edges()
+                eval_solution = True
+
+                if candidate in tabu_list[]:
+                    eval_solution = False
+
+                    """Criterio de aspiración"""
+                    if candidate.cost < tolerance*best_solution.cost
+                        eval_solution = True
+
+                if eval_solution:
+                    if candidate.cost < best_neighbour.cost:
+                        best_neighbour = deepcopy(candidate)
+                    if candidate.cost < best_solution.cost:
+                        best_solution = deepcopy(candidate)
+                  
+                j+=1
+            """Fin del while"""
+            candidate = deepcopy(best_neighbour)
+            tabu_list += best_neighbour.permutation
+                
+            i+=n
+        """Fin del while"""
         
     def print_solution(self, solution):
         p_x = [ self.points[i][0] for i in solution.permutation ]
@@ -140,11 +184,9 @@ class TSP:
             ])
 
 
-# In[404]:
+# In[6]:
 
 files = ['berlin52.tsp', 'ch150.tsp', 'd198.tsp', 'eil101.tsp']
-
-seed(12345678)
 
 problems = {}
 sa_solutions = {}
@@ -155,18 +197,21 @@ best_solutions = {'berlin52': 7542,
                   'eil101':   629}
 
 
-# In[406]:
+# In[9]:
+
+semilla = 12345678
 
 for f in files:
+    seed(semilla)
     name = f[:-4]
     problems[name] = TSP(f)
     size = len(problems[name].points)
-    n_iter = 10000
+    n_iter = 100000
     alpha = 0.95
     sa_solutions[name] = problems[name].simulated_annealing(size*1e3, n_iter, alpha) 
 
 
-# In[408]:
+# In[10]:
 
 for name in problems:
     print (name 
