@@ -8,7 +8,7 @@
 get_ipython().magic(u'matplotlib inline')
 
 
-# In[3]:
+# In[16]:
 
 from numpy import *
 from random import *
@@ -59,7 +59,7 @@ class Route:
 
 # Implementación de la clase que albergará los datos del problema
 
-# In[5]:
+# In[19]:
 
 class TSP:   
     
@@ -118,7 +118,7 @@ class TSP:
         
         return best_solution
     
-    def tabu_search(self, max_iter):
+    def tabu_search(self, max_iter, max_similarity):
         """Número de ciudades"""
         n = len(self.points)
         
@@ -133,7 +133,7 @@ class TSP:
         tolerance = 1.2
         
         """Lista tabú de soluciones"""
-        tabu_list = []
+        tabu_list = set([])
         
         i=0
         
@@ -143,24 +143,29 @@ class TSP:
             while j < n: 
                 candidate.change_edges()
                 eval_solution = True
-
-                if candidate in tabu_list[]:
+                
+                """Conjunto de arcos comunes"""
+                common = tabu_list.intersetion(candidate.get_edges)
+                similarity = len(common)/n*1.0
+                
+                if similarity > max_similarity:
                     eval_solution = False
 
                     """Criterio de aspiración"""
-                    if candidate.cost < tolerance*best_solution.cost
+                    if candidate.cost < tolerance*best_solution.cost:
                         eval_solution = True
 
                 if eval_solution:
                     if candidate.cost < best_neighbour.cost:
                         best_neighbour = deepcopy(candidate)
+                        tabu_elems = deepcopy(common)
                     if candidate.cost < best_solution.cost:
                         best_solution = deepcopy(candidate)
                   
                 j+=1
             """Fin del while"""
             candidate = deepcopy(best_neighbour)
-            tabu_list += best_neighbour.permutation
+            tabu_list = deepcopy(tabu_elems)
                 
             i+=n
         """Fin del while"""
@@ -188,7 +193,7 @@ class TSP:
             ])
 
 
-# In[6]:
+# In[24]:
 
 files = ['berlin52.tsp', 'ch150.tsp', 'd198.tsp', 'eil101.tsp']
 
@@ -196,12 +201,12 @@ problems = {}
 sa_solutions = {}
 ts_solutions = {}
 best_solutions = {'berlin52': 7542,
-                  'ch150':    6528,
-                  'd198':     15780,
-                  'eil101':   629}
+                  'ch150': 6528,
+                  'd198': 15780,
+                  'eil101': 629}
 
 
-# In[9]:
+# In[22]:
 
 semilla = 12345678
 
@@ -210,12 +215,12 @@ for f in files:
     name = f[:-4]
     problems[name] = TSP(f)
     size = len(problems[name].points)
-    n_iter = 100000
+    n_iter = 10000
     alpha = 0.95
     sa_solutions[name] = problems[name].simulated_annealing(size*1e3, n_iter, alpha) 
 
 
-# In[10]:
+# In[23]:
 
 for name in problems:
     print (name 
