@@ -31,8 +31,7 @@ class Route:
 
         """Calculates cuadratic cost"""
         def update_cost(self):
-            shifted = append(self.permutation[1:], [self.permutation[0]])
-            pairs = zip(self.permutation, shifted)
+            pairs = self.get_edges()
             self.cost = sum([self.dist[x,y] for (x,y) in pairs])
         
         def change_positions(self):
@@ -50,6 +49,11 @@ class Route:
             rev = rev[::-1]
             self.permutation[i:j] = rev
             self.update_cost()
+        
+        def get_edges(self):
+            shifted = append(self.permutation[1:], [self.permutation[0]])
+            pairs = zip(self.permutation, shifted)
+            return(pairs)
             
 
 
