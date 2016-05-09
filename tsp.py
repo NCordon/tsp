@@ -3,12 +3,12 @@
 
 # # Travelling Salesman Problem
 
-# In[2]:
+# In[32]:
 
 get_ipython().magic(u'matplotlib inline')
 
 
-# In[16]:
+# In[33]:
 
 from numpy import *
 from random import *
@@ -20,7 +20,7 @@ import re
 
 # Definimos una solución como una permutación con su coste
 
-# In[4]:
+# In[41]:
 
 class Route:
         
@@ -34,17 +34,15 @@ class Route:
             pairs = self.get_edges()
             self.cost = sum([self.dist[x,y] for (x,y) in pairs])
         
-        def change_positions(self):
+        def change_positions(self,i,j):
             # Intercambia dos ciudades del grafo
-            i = randint(0, len(self.permutation)-1)
-            j = randint(0, len(self.permutation)-1)
             self.permutation[i], self.permutation[j] = self.permutation[j], self.permutation[i]
             self.update_cost()
             
-        def change_edges(self):
+        def change_edges(self,i,j):
             # Intercambia dos aristas del grafo
-            i = randint(0, len(self.permutation)-1)
-            j = randint(i+1, len(self.permutation))              
+            i,j = min(i,j), max(i,j)
+            
             rev = self.permutation[i:j]
             rev = rev[::-1]
             self.permutation[i:j] = rev
@@ -59,7 +57,7 @@ class Route:
 
 # Implementación de la clase que albergará los datos del problema
 
-# In[19]:
+# In[42]:
 
 class TSP:   
     
@@ -100,7 +98,12 @@ class TSP:
         
         while i < max_iter:
             candidate = deepcopy(solution)
-            candidate.change_edges()
+            
+            # Generamos los índices de los arcos a cambiar
+            u = randint(0, n-1)
+            v = randint(u+1, n)   
+            
+            candidate.change_edges(u,v)
             diff_cost = candidate.cost - solution.cost
             
             if (diff_cost < 0 or random() < exp(-diff_cost*1.0/t)):
@@ -118,7 +121,7 @@ class TSP:
         
         return best_solution
     
-    def tabu_search(self, max_iter, max_similarity):
+    def tabu_search(self, max_iter, max_similarity, tolerance):
         """Número de ciudades"""
         n = len(self.points)
         
@@ -129,13 +132,10 @@ class TSP:
         best_neighbour = deepcopy(candidate)
         best_solution = deepcopy(candidate)
         
-        """Parámetro del criterio de aspiración"""
-        tolerance = 1.2
-        
         """Lista tabú de soluciones"""
         tabu_list = set([])
         
-        i=0
+        i = 0
         
         while i < max_iter:
             j = 0
@@ -163,11 +163,11 @@ class TSP:
                         best_solution = deepcopy(candidate)
                   
                 j+=1
+                i+=1
             """Fin del while"""
             candidate = deepcopy(best_neighbour)
             tabu_list = deepcopy(tabu_elems)
-                
-            i+=n
+            
         """Fin del while"""
         
     def print_solution(self, solution):
@@ -193,7 +193,7 @@ class TSP:
             ])
 
 
-# In[24]:
+# In[43]:
 
 files = ['berlin52.tsp', 'ch150.tsp', 'd198.tsp', 'eil101.tsp']
 
@@ -206,7 +206,7 @@ best_solutions = {'berlin52': 7542,
                   'eil101': 629}
 
 
-# In[22]:
+# In[44]:
 
 semilla = 12345678
 
@@ -220,7 +220,7 @@ for f in files:
     sa_solutions[name] = problems[name].simulated_annealing(size*1e3, n_iter, alpha) 
 
 
-# In[23]:
+# In[45]:
 
 for name in problems:
     print (name 
