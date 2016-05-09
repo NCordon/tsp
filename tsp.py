@@ -21,7 +21,7 @@ import re
 
 # Definimos una solución como una permutación con su coste
 
-# In[115]:
+# In[209]:
 
 class Route:
         
@@ -58,7 +58,7 @@ class Route:
 
 # Implementación de la clase que albergará los datos del problema
 
-# In[185]:
+# In[277]:
 
 class TSP:   
     
@@ -120,8 +120,6 @@ class TSP:
             """Esquema de enfriamiento"""
             t = alpha*t
             
-            #if (i%100==0):
-            #    print(t)
             i+=1
         
         return best_solution
@@ -147,7 +145,7 @@ class TSP:
             edge_freq = array([[0]*n]*n)
             
             best_neighbour = None
-            entra = False
+            
             while j < max_vecinos: 
                 # Generamos los índices de los arcos a cambiar
                 u = randint(0, n-1)
@@ -160,7 +158,7 @@ class TSP:
                 # Si hay arcos comunes entre ambos
                 if (set(candidate.get_edges()) & set(tabu_list)):
                     eval_solution = False
-
+                    
                     """Criterio de aspiración"""
                     if best_neighbour is not None and                        candidate.cost < aspiration_tol*best_solution.cost:
                         
@@ -173,11 +171,6 @@ class TSP:
                         if candidate.cost < best_neighbour.cost:
                             best_neighbour = deepcopy(candidate)
                         
-                        """Actualizamos los arcos 'buenos'"""
-                        for (a,b) in candidate.get_edges():
-                            edge_freq[a,b] += 1;
-                            entra = True
-                        
                         if candidate.cost < best_solution.cost:
                             best_solution = deepcopy(candidate)
                   
@@ -187,17 +180,21 @@ class TSP:
             
             if best_neighbour is not None:
                 candidate = deepcopy(best_neighbour)
-            # Escoge un elemento aleatorio de los peores arcos visitados por las
-            # soluciones y lo introduce en la lista
-            used_edges = edge_freq[edge_freq>0]
-            
-            if used_edges.any():
-                tabu_list[ next(index) ] = tuple(choice( 
-                    transpose( where(edge_freq == used_edges.min()) )
-                ))
+
+                # Arcos del mejor vecino
+                used_edges = best_neighbour.get_edges()
+
+
+                #tabu_list[ next(index) ] = tuple(choice( 
+                #    transpose( where(self.dist == self.dist[used_edges].max()) )
+                #))
+                for vv in range(10):
+                    tabu_list[ next(index) ] = tuple(choice(used_edges))
             else:
-                tabu_list[ next(index) ] = None
-            
+                candidate = deepcopy(best_solution)
+                for vv in range(10):
+                    tabu_list[ next(index) ] = None
+
             #print(tabu_list)
             
         """Fin del while"""
@@ -228,7 +225,7 @@ class TSP:
             ])
 
 
-# In[175]:
+# In[211]:
 
 files = ['berlin52.tsp', 'ch150.tsp', 'd198.tsp', 'eil101.tsp']
 
@@ -255,7 +252,7 @@ for f in files:
     sa_solutions[name] = problems[name].simulated_annealing(size*1e3, n_iter, alpha) 
 
 
-# In[207]:
+# In[282]:
 
 semilla = 12345678
 f = 'eil101.tsp'
@@ -264,11 +261,11 @@ seed(semilla)
 name = f[:-4]
 problems[name] = TSP(f)
 size = len(problems[name].points)
-n_iter = size*200
-coef_tenencia = 0.3
-aspiration_tol = 1.5
-ts_solutions[name] = problems[name].tabu_search(n_iter, size, coef_tenencia, aspiration_tol)
-ts_solutions[name].cost
+n_iter = size*300
+coef_tenencia = 0.07
+aspiration_tol = 1.05
+ts_solutions[name] = problems[name].tabu_search(n_iter, 10, coef_tenencia, aspiration_tol)
+print(ts_solutions[name].cost)
 problems[name].print_solution(ts_solutions[name])
 
 
