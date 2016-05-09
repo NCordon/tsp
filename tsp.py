@@ -3,12 +3,12 @@
 
 # # Travelling Salesman Problem
 
-# In[32]:
+# In[48]:
 
 get_ipython().magic(u'matplotlib inline')
 
 
-# In[33]:
+# In[76]:
 
 from numpy import *
 from random import *
@@ -21,7 +21,7 @@ import re
 
 # Definimos una solución como una permutación con su coste
 
-# In[41]:
+# In[115]:
 
 class Route:
         
@@ -58,7 +58,7 @@ class Route:
 
 # Implementación de la clase que albergará los datos del problema
 
-# In[42]:
+# In[185]:
 
 class TSP:   
     
@@ -103,8 +103,12 @@ class TSP:
             # Generamos los índices de los arcos a cambiar
             u = randint(0, n-1)
             v = randint(u+1, n)   
-            
             candidate.change_edges(u,v)
+            
+            """u = randint(0, n-1)
+            v = randint(0, n-1)
+            candidate.change_positions(u,v)"""
+            
             diff_cost = candidate.cost - solution.cost
             
             if (diff_cost < 0 or random() < exp(-diff_cost*1.0/t)):
@@ -122,7 +126,7 @@ class TSP:
         
         return best_solution
     
-    def tabu_search(self, max_iter, coef_tabu_list, tolerance):
+    def tabu_search(self, max_iter, max_vecinos, coef_tenencia, aspiration_tol):
         """Número de ciudades"""
         n = len(self.points)
         
@@ -130,20 +134,21 @@ class TSP:
         permutation = array(range(n))
         shuffle(permutation)
         candidate = Route(permutation, self.dist)
+        best_solution = deepcopy(candidate)
         
         """Lista tabú de soluciones"""
-        tabu_list = [None] * coef_tabu_list*n
+        tabu_list = [None] * int(coef_tenencia*n)
         index = cycle(range(len(tabu_list)))
         
         i = 0
         
         while i < max_iter:
             j = 0
-            edge_freq = [[0]*n]*n
+            edge_freq = array([[0]*n]*n)
             
             best_neighbour = None
-            
-            while j < n: 
+            entra = False
+            while j < max_vecinos: 
                 # Generamos los índices de los arcos a cambiar
                 u = randint(0, n-1)
                 v = randint(u+1, n)   
@@ -151,35 +156,54 @@ class TSP:
                 
                 eval_solution = True
 
+                
                 # Si hay arcos comunes entre ambos
-                if (set(candidate.get_edges()) & set(tabu_list))
+                if (set(candidate.get_edges()) & set(tabu_list)):
                     eval_solution = False
 
                     """Criterio de aspiración"""
-                    if candidate.cost < tolerance*best_solution.cost:
+                    if best_neighbour is not None and                        candidate.cost < aspiration_tol*best_solution.cost:
+                        
                         eval_solution = True
 
                 if eval_solution:
-                    if best_neighbour is None || candidate.cost < best_neighbour.cost:
+                    if best_neighbour is None: 
                         best_neighbour = deepcopy(candidate)
+                    else:
+                        if candidate.cost < best_neighbour.cost:
+                            best_neighbour = deepcopy(candidate)
                         
-                        for (i,j) in candidate.get_edges()
-                            m[i,j] += 1;
+                        """Actualizamos los arcos 'buenos'"""
+                        for (a,b) in candidate.get_edges():
+                            edge_freq[a,b] += 1;
+                            entra = True
                         
-                    if candidate.cost < best_solution.cost:
-                        best_solution = deepcopy(candidate)
+                        if candidate.cost < best_solution.cost:
+                            best_solution = deepcopy(candidate)
                   
                 j+=1
                 i+=1
             """Fin del while"""
-            candidate = deepcopy(best_neighbour)
+            
+            if best_neighbour is not None:
+                candidate = deepcopy(best_neighbour)
             # Escoge un elemento aleatorio de los peores arcos visitados por las
             # soluciones y lo introduce en la lista
-            tablu_elem[ next(index) ] = choice( 
-                transpose( where(edge_freq == edge_freq[edge_freq>0].min()) )
-            )
+            used_edges = edge_freq[edge_freq>0]
+            
+            if used_edges.any():
+                tabu_list[ next(index) ] = tuple(choice( 
+                    transpose( where(edge_freq == used_edges.min()) )
+                ))
+            else:
+                tabu_list[ next(index) ] = None
+            
+            #print(tabu_list)
             
         """Fin del while"""
+        
+        return best_solution
+    
         
     def print_solution(self, solution):
         p_x = [ self.points[i][0] for i in solution.permutation ]
@@ -204,7 +228,7 @@ class TSP:
             ])
 
 
-# In[43]:
+# In[175]:
 
 files = ['berlin52.tsp', 'ch150.tsp', 'd198.tsp', 'eil101.tsp']
 
@@ -217,7 +241,7 @@ best_solutions = {'berlin52': 7542,
                   'eil101': 629}
 
 
-# In[44]:
+# In[182]:
 
 semilla = 12345678
 
@@ -226,12 +250,29 @@ for f in files:
     name = f[:-4]
     problems[name] = TSP(f)
     size = len(problems[name].points)
-    n_iter = 10000
+    n_iter = size*100
     alpha = 0.95
     sa_solutions[name] = problems[name].simulated_annealing(size*1e3, n_iter, alpha) 
 
 
-# In[45]:
+# In[207]:
+
+semilla = 12345678
+f = 'eil101.tsp'
+
+seed(semilla)
+name = f[:-4]
+problems[name] = TSP(f)
+size = len(problems[name].points)
+n_iter = size*200
+coef_tenencia = 0.3
+aspiration_tol = 1.5
+ts_solutions[name] = problems[name].tabu_search(n_iter, size, coef_tenencia, aspiration_tol)
+ts_solutions[name].cost
+problems[name].print_solution(ts_solutions[name])
+
+
+# In[68]:
 
 for name in problems:
     print (name 
