@@ -14,6 +14,7 @@ from numpy import *
 from random import *
 from math import exp
 from copy import deepcopy
+from itertools import cycle
 import matplotlib as matplotlib
 import re
 
@@ -121,7 +122,7 @@ class TSP:
         
         return best_solution
     
-    def tabu_search(self, max_iter, max_similarity, tolerance):
+    def tabu_search(self, max_iter, coef_tabu_list, tolerance):
         """Número de ciudades"""
         n = len(self.points)
         
@@ -129,26 +130,29 @@ class TSP:
         permutation = array(range(n))
         shuffle(permutation)
         candidate = Route(permutation, self.dist)
-        best_neighbour = deepcopy(candidate)
-        best_solution = deepcopy(candidate)
         
         """Lista tabú de soluciones"""
-        tabu_list = set([])
+        tabu_list = [None] * coef_tabu_list*n
+        index = cycle(range(len(tabu_list)))
         
         i = 0
         
         while i < max_iter:
             j = 0
+            edge_freq = [[0]*n]*n
+            
+            best_neighbour = None
             
             while j < n: 
-                candidate.change_edges()
+                # Generamos los índices de los arcos a cambiar
+                u = randint(0, n-1)
+                v = randint(u+1, n)   
+                candidate.change_edges(u,v)
+                
                 eval_solution = True
-                
-                """Conjunto de arcos comunes"""
-                common = tabu_list.intersetion(candidate.get_edges)
-                similarity = len(common)/n*1.0
-                
-                if similarity > max_similarity:
+
+                # Si hay arcos comunes entre ambos
+                if (set(candidate.get_edges()) & set(tabu_list))
                     eval_solution = False
 
                     """Criterio de aspiración"""
@@ -156,9 +160,12 @@ class TSP:
                         eval_solution = True
 
                 if eval_solution:
-                    if candidate.cost < best_neighbour.cost:
+                    if best_neighbour is None || candidate.cost < best_neighbour.cost:
                         best_neighbour = deepcopy(candidate)
-                        tabu_elems = deepcopy(common)
+                        
+                        for (i,j) in candidate.get_edges()
+                            m[i,j] += 1;
+                        
                     if candidate.cost < best_solution.cost:
                         best_solution = deepcopy(candidate)
                   
@@ -166,7 +173,11 @@ class TSP:
                 i+=1
             """Fin del while"""
             candidate = deepcopy(best_neighbour)
-            tabu_list = deepcopy(tabu_elems)
+            # Escoge un elemento aleatorio de los peores arcos visitados por las
+            # soluciones y lo introduce en la lista
+            tablu_elem[ next(index) ] = choice( 
+                transpose( where(edge_freq == edge_freq[edge_freq>0].min()) )
+            )
             
         """Fin del while"""
         
