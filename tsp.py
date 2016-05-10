@@ -3,31 +3,32 @@
 
 # # Travelling Salesman Problem
 
-# In[48]:
+# In[322]:
 
 get_ipython().magic(u'matplotlib inline')
 
 
-# In[76]:
+# In[323]:
 
 from numpy import *
 from random import *
 from math import exp
 from copy import deepcopy
 from itertools import cycle
+from collections import deque
 import matplotlib as matplotlib
 import re
 
 
 # Definimos una solución como una permutación con su coste
 
-# In[209]:
+# In[324]:
 
 class Route:
         
         def __init__(self, permutation, dist):
-            self.permutation = deepcopy(permutation)
-            self.dist = dist
+            self.permutation = deepcopy(array(permutation))
+            self.dist = array(dist)
             self.update_cost()
 
         """Calculates cuadratic cost"""
@@ -58,7 +59,7 @@ class Route:
 
 # Implementación de la clase que albergará los datos del problema
 
-# In[277]:
+# In[335]:
 
 class TSP:   
     
@@ -124,7 +125,30 @@ class TSP:
         
         return best_solution
     
-    def tabu_search(self, max_iter, max_vecinos, coef_tenencia, aspiration_tol):
+    def make_permutation(self,edge_freq):
+        edge_freq = array(edge_freq)
+        n = len(edge_freq)
+        prev = 0
+        permutation = array([0]*n)
+        visited = array([True] + [False]*(n-1))
+
+        for i in range(1,n):
+            min_freq = min_freq = float("inf")
+
+            for j in where(visited == False)[0]:
+                if not visited[j] and edge_freq[prev,j] < min_freq:
+                    min_freq = edge_freq[prev,j]
+                    selected = j
+
+            visited[selected] = True
+            prev = selected
+            permutation[i] = prev
+
+        return(permutation)
+            
+    
+    
+    def tabu_search(self, max_iter, max_vecinos, coef_tenencia, aspiration_tol, limit_restart):
         """Número de ciudades"""
         n = len(self.points)
         
@@ -138,11 +162,23 @@ class TSP:
         tabu_list = [None] * int(coef_tenencia*n)
         index = cycle(range(len(tabu_list)))
         
+        """Lista de reinicialización"""
+        best_list = deque([])
+        non_improving = 0
+        edge_freq = array([[0]*n]*n)
+        
         i = 0
         
         while i < max_iter:
+            if (non_improving == limit_restart):
+                if (random() < 0.25):
+                    candidate = best_list.popleft()
+                else:
+                    candidate = Route(make_permutation(edge_freq), self.dist)
+                    
+                non_improving = 0
+                
             j = 0
-            edge_freq = array([[0]*n]*n)
             
             best_neighbour = None
             
@@ -170,9 +206,15 @@ class TSP:
                     else:
                         if candidate.cost < best_neighbour.cost:
                             best_neighbour = deepcopy(candidate)
+                            best_list.append(best_neighbour)
+                            
+                            for (i,j) in candidate.get_edges():
+                                edge_freq[i,j] += 1;
                         
-                        if candidate.cost < best_solution.cost:
-                            best_solution = deepcopy(candidate)
+                            if candidate.cost < best_solution.cost:
+                                best_solution = deepcopy(candidate)
+                        else:
+                            non_improving += 1
                   
                 j+=1
                 i+=1
@@ -225,7 +267,7 @@ class TSP:
             ])
 
 
-# In[211]:
+# In[329]:
 
 files = ['berlin52.tsp', 'ch150.tsp', 'd198.tsp', 'eil101.tsp']
 
@@ -238,7 +280,7 @@ best_solutions = {'berlin52': 7542,
                   'eil101': 629}
 
 
-# In[182]:
+# In[336]:
 
 semilla = 12345678
 
@@ -267,6 +309,11 @@ aspiration_tol = 1.05
 ts_solutions[name] = problems[name].tabu_search(n_iter, 10, coef_tenencia, aspiration_tol)
 print(ts_solutions[name].cost)
 problems[name].print_solution(ts_solutions[name])
+
+
+# In[337]:
+
+problems['berlin52'].make_permutation(edge_freq)
 
 
 # In[68]:
