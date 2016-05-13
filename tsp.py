@@ -59,7 +59,7 @@ class Route:
 
 # Implementación de la clase que albergará los datos del problema
 
-# In[104]:
+# In[223]:
 
 class TSP:   
     
@@ -155,54 +155,42 @@ class TSP:
         """Permutación"""
         permutation = array(range(n))
         shuffle(permutation)
-        candidate = Route(permutation, self.dist)
-        best_solution = deepcopy(candidate)
+        neighbour = Route(permutation, self.dist)
+        best_solution = deepcopy(neighbour)
         
         """Lista tabú de soluciones"""
         tabu_list = [None] * tabu_tenencia
         index = cycle(range(len(tabu_list)))
-        
-        """Lista de reinicialización"""
-        best_list = deque([])
-        non_improving = 0
-        edge_freq = array([[0]*n]*n)
         restart = False
         
+        """Lista de reinicialización"""
+        non_improving = 0
+        edge_freq = array([[0]*n]*n)
         i = 0
+        
         
         while i < max_iter:                
             j = 0
             
-            best_neighbour = None
-            
-            while i< max_iter and j < max_vecinos:
-                
-                if non_improving==limit_restart or restart:
-                    u = random()
-                    
-                    if (u < prob_bs):
-                        candidate = deepcopy(best_solution)
-                    else: 
-                        if ((u-prob_bs) < prob_greedy):
-                            #candidate = Route(self._make_permutation(edge_freq), self.dist)
-                        #else:
-                            permutation = array(range(n))
-                            shuffle(permutation)
-                            candidate = Route(permutation, self.dist)
+            if restart:
+                u = random()
 
-                    j = 0
-                    non_improving = 0
-                    
-                    if best_neighbour is not None:
-                        tabu_list[ next(index) ] = (u_tabu, v_tabu)
-                    
-                    best_neighbour = None
-                    #tabu_list = [None] * int(coef_tenencia*n)
-                    restart = False
-                
-                    
+                if (u < prob_bs):
+                    neighbour = deepcopy(best_solution)
+                else: 
+                    neighbour = Route(self._make_permutation(edge_freq), self.dist)
+
+                restart = False
+                non_improving = 0                    
+                #tabu_list = [None] * int(coef_tenencia*n)
+    
+            
+            best_neighbour = deepcopy(neighbour)
+            u_tabu, v_tabu = None, None
+            
+            while i< max_iter and j < max_vecinos and not restart:     
                 # Generamos los índices de los arcos a cambiar
-                    
+                candidate = deepcopy(neighbour)    
                 u = randint(0, n-1)
                 v = randint(u+1, n)   
                 candidate.change_edges(u,v)
@@ -215,38 +203,37 @@ class TSP:
                     eval_solution = False
                     
                     """Criterio de aspiración"""
-                    if best_neighbour is not None and                        candidate.cost < aspiration_tol*best_solution.cost:
+                    if candidate.cost < aspiration_tol*best_solution.cost:
                         eval_solution = True
-
+                
                 if eval_solution:
-                    if best_neighbour is None: 
+                    if candidate.cost < best_neighbour.cost:
                         best_neighbour = deepcopy(candidate)
+                        #best_list.append(best_neighbour)
                         u_tabu, v_tabu = u,v  
+
+                        for (p,q) in best_neighbour.get_edges():
+                            edge_freq[p,q] += 1;
+
+                        if candidate.cost < best_solution.cost:
+                            best_solution = deepcopy(candidate)                      
+
                     else:
-                        if candidate.cost < best_neighbour.cost:
-                            best_neighbour = deepcopy(candidate)
-                            best_list.append(best_neighbour)
+                        non_improving += 1
+                        restart = (non_improving == limit_restart)
                             
-                            for (p,q) in candidate.get_edges():
-                                edge_freq[p,q] += 1;
-                        
-                            if candidate.cost < best_solution.cost:
-                                best_solution = deepcopy(candidate)                      
-                            
-                        else:
-                            non_improving += 1
                   
                 j+=1
                 i+=1
             """Fin de exploración del vecindario"""
             
-            if best_neighbour is not None:
-                candidate = deepcopy(best_neighbour)
-                # Arcos del mejor vecino
+            
+            neighbour = deepcopy(best_neighbour)
+            # Arcos del mejor vecino
+            if u_tabu is not None:
                 tabu_list[ next(index) ] = (u_tabu, v_tabu)
             else:
-                restart = True
-                tabu_list = [None] * tabu_tenencia
+                tabu_list[ next(index) ] = None
             
             
         """Fin de toda la exploración"""
@@ -303,55 +290,33 @@ for f in files:
     sa_solutions[name] = problems[name].simulated_annealing(size*1e3, n_iter, alpha) 
 
 
-# In[132]:
+# In[240]:
 
 semilla = 12345678
-f = 'eil101.tsp'
 
-seed(semilla)
-name = f[:-4]
-problems[name] = TSP(f)
-size = len(problems[name].points)
-n_iter = size*100
-aspiration_tol = 1.
-limit_restart = 5
-max_vecinos = 30
-tabu_tenencia=int(size*0.3)
-prob_bs = 0.8
-prob_greedy = 0.1
-prob_aleatorio = "restante"
-ts_solutions[name] = problems[name].tabu_search(n_iter, max_vecinos, tabu_tenencia, aspiration_tol, limit_restart)
-print(ts_solutions[name].cost)
-#problems[name].print_solution(ts_solutions[name])
+for f in files:
+    seed(semilla)
+    name = f[:-4]
+    problems[name] = TSP(f)
+    size = len(problems[name].points)
+    n_iter = size*100
+    aspiration_tol = 1.
+    limit_restart = 25
+    max_vecinos = 25
+    tabu_tenencia=int(size*0.3)
+    prob_bs = 0.95
+    prob_greedy = 0.05
+
+    ts_solutions[name] = problems[name].tabu_search(n_iter, max_vecinos, tabu_tenencia, aspiration_tol, limit_restart)
 
 
-# In[140]:
-
-semilla = 12345678
-f = 'd198.tsp'
-
-seed(semilla)
-name = f[:-4]
-problems[name] = TSP(f)
-size = len(problems[name].points)
-n_iter = size*300
-aspiration_tol = 1.
-limit_restart = 7
-max_vecinos = 30
-tabu_tenencia=int(size)
-prob_bs = 0.8
-prob_greedy = 0.1
-prob_aleatorio = "restante"
-ts_solutions[name] = problems[name].tabu_search(n_iter, max_vecinos, tabu_tenencia, aspiration_tol, limit_restart)
-print(ts_solutions[name].cost)
-problems[name].print_solution(ts_solutions[name])
-
-
-# In[ ]:
+# In[241]:
 
 for name in problems:
     print (name 
            + '\n\t SA: '   + str(sa_solutions[name].cost)
+           + '\n\t TS: '   + str(ts_solutions[name].cost)
            + '\n\t Best: ' + str(best_solutions[name]))
     problems[name].print_solution(sa_solutions[name])
+    problems[name].print_solution(ts_solutions[name])
 
