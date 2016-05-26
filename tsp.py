@@ -7,12 +7,12 @@
 # resolución aproximada mediante las metaheurísticas *Enfriamiento Simulado*
 # y *Búsqueda Tabú*
 
-# In[62]:
+# In[93]:
 
 get_ipython().magic(u'matplotlib inline')
 
 
-# In[39]:
+# In[94]:
 
 from numpy import *
 from random import *
@@ -26,25 +26,29 @@ import re
 # Definimos una solución como un objeto `Route`.
 # 
 # > **`Route`**
-# >> Recibe en su construcción una permutación y una matriz de distancias
+# >> **`__init__`**: 
+# >>> Recibe en su construcción una permutación y una matriz de distancias
 # 
-# >> **`permutation`**: Contiene la permutación de ciudades en el orden en que
-# se visitan
+# >> **`permutation`**: 
+# >>> Contiene la permutación de ciudades en el orden en que se visitan
 # 
-# >> **`cost`**: Devuelve el coste de la permutación
+# >> **`cost`**: 
+# >>> Devuelve el coste de la permutación
 # 
-# >> **`update_cost`**: Recalcula el coste de la permutación
+# >> **`update_cost`**: 
+# >>> Recalcula el coste de la permutación
 # 
-# >> **`change_positions`**: Método que intercambia dos ciudades de la
-# permutación
+# >> **`change_positions`**: 
+# >>> Método que intercambia dos ciudades de la permutación
 # 
-# >> **`change_edges`**: Método que permite intercambiar dos arcos de la permutación dados por su índice, donde
-# si la permutación es [1,3,4], el arco 0-ésimo es (4,1) y el arco 1-ésimo es (1,3)
+# >> **`change_edges`**: 
+# >>> Método que permite intercambiar dos arcos de la permutación dados por su índice, donde si la permutación es [1,3,4], el arco 0-ésimo es (4,1) y el arco 1-ésimo es (1,3)
 # 
-# >> **`get_edges`**: Método que devuelve los arcos como tuplas de las ciudades que unen
+# >> **`get_edges`**: 
+# >>> Método que devuelve los arcos como tuplas de las ciudades que unen
 # 
 
-# In[40]:
+# In[95]:
 
 class Route:
         
@@ -80,8 +84,55 @@ class Route:
 
 
 # Implementación de la clase `TSP` que albergará los datos del problema
+# 
+# > **`TSP`**
+# 
+# >> **`__init__`**: 
+# >>> Se le pasa como parámetro `file`, un nombre de un fichero *.tsp* que se encuentre dentro del directorio en que trabajamos. Hace uso de la función auxiliar **`__read`** para leer el fichero
+# 
+# >> **`print_solution`**: 
+# >>> Recibe un objeto de la clase `Route`, `solution`, y hace un plot de la permutación que en él se representa
+# 
+# >> **`simulated_annealing`**: 
+# >>> Resuelve el problema del viajante de comercio empleando un enfriamiento simulado con esquema geométrico, con operador de generación de vecino 2-opt de arcos, y selección de temperatura inicial a:
+#  $$T_0 = \frac{\mu}{-log(\phi)} \cdot Cost(S_0)  $$
+# >>> Esto es, un factor $\mu$ de probabilidad de tomar una solución $\phi$ veces peor que la inicial $S_0$
+# >>> **`n_iter`**: Número de evaluaciones que se hacen de la función objetivo
+# 
+# >>> **`alpha`**: factor de descenso de la media geométrica $T_k = \alpha \cdot T_{k-1}$
+# 
+# >>> **`mu`**
+# 
+# >>> **`phi`**
+# 
+# >> **`__make_permutation`**: 
+# >>> Devuelve una construcción *greedy* que va seleccionando a cada paso, de los arcos válidos (aquellos cuyo origen o destino no ha sido seleccionado aún) los menos usados en soluciones, lo cuál se mide con una matriz de frecuencias **`edge_freq`**, que contiene el número de veces que cada arco ha salido en soluciones anteriores. Esta matriz **`edge_freq`** es simétrica.
+# 
+# 
+# >> **`tabu_search`**: 
+# >>> Resuelve el problema del viajante de comercio empleando una búsqueda tabú con memoria de corto y largo plazo.
+# 
+# >>> La memoria de largo plazo **`edge_freq`** es una matriz que almacena las veces que un arco `(p,q)` ha salido en un vecino bueno del vecindario (uno que mejorase al mejor hasta el momento **`best_neighbour`**).
+# 
+# >>> Cuando se produce la reinicialización (con probabilidad **`1-prob_intensificacion`** cada vez que se alcanza **`limit_restart`** de vecinos sin elementos tabú que no mejoran a **`best_neighbour`**), se resetean todos los valores de la memoria de largo plazo a 0.
+# 
+# >>> La intensificación reinicia la búsqueda a la mejor solución encontrada **`best_solution`** con una probabilidad de **`prob_intensificacion`** cada vez que se llega un número **`limit_restart`** de vecinos sin elementos tabú que no mejoran a **`best_neighbour`**.
+# 
+# >>> El operador de vecino empleado ha sido 2-opt de arcos.
+# 
+# >>> **`max_iter`**: Número de vecinos que se generan
+# 
+# >>> **`max_vecinos`**: Número de vecinos que se generarán en cada exploración de vecindario
+# 
+# >>> **`limit_restart`**: Número de evaluaciones de la función objetivo que no han mejorado
+# 
+# >>> **`tabu_tenencia`**: Tamaño de la **`tabu_list`** que contiene los movimientos 2-opt más recientes
+# 
+# >>> **`aspiration_tol`**: Criterio de aspiración. Da la tolerancia en coste en el intervalo $[0,1]$ frente a la mejor solución obtenida hasta el momento
+# 
+# >>> **`prob_intensificacion`**: Probabilidad con la que tras un número **`limit_restart`** de vecinos que no mejoran, se intensificará la búsqueda sobre la mejor solución hasta el momento.
 
-# In[187]:
+# In[152]:
 
 class TSP:
     def __init__(self, file):
@@ -91,6 +142,7 @@ class TSP:
                 [dot(subtract(x,y),subtract(x,y)) for x in self.points] 
                 for y in self.points
             ])    
+    
     
     
     def __read (self, file):  
@@ -108,6 +160,8 @@ class TSP:
     
         return(points)
     
+    
+    
     def print_solution(self, solution):
         p_x = [ self.points[i][0] for i in solution.permutation ]
         p_y = [ self.points[i][1] for i in solution.permutation ]
@@ -123,11 +177,12 @@ class TSP:
         matplotlib.pyplot.plot(p_x, p_y, marker='o', color='red', markersize=7)
         
     
-    def simulated_annealing(self, t_ini, max_iter, alpha, mu, phi):
+    
+    def simulated_annealing(self, max_iter, alpha, mu, phi):
         """Número de ciudades"""
         n = len(self.points)
         
-        """Permutación"""
+        """Inicialización de una solución"""
         permutation = array(range(n))
         shuffle(permutation)
         solution = Route(permutation, self.dist)
@@ -167,30 +222,31 @@ class TSP:
         
         return best_solution
     
+    
+    
     def _make_permutation(self, edge_freq):
         edge_freq = array(edge_freq)
         n = len(edge_freq)
-        prev = 0
         permutation = array([0]*n)
         visited = array([True] + [False]*(n-1))
 
         for i in range(1,n):
-            min_freq = min_freq = float("inf")
+            min_freq = float("inf")
 
             for j in where(visited == False)[0]:
-                if not visited[j] and edge_freq[prev,j] < min_freq:
-                    min_freq = edge_freq[prev,j]
+                if edge_freq[ permutation[i-1],j ] < min_freq:
+                    min_freq = edge_freq[ permutation[i-1],j ]
                     selected = j
 
             visited[selected] = True
-            prev = selected
-            permutation[i] = prev
+            permutation[i] = selected
 
-        return(permutation)
+        return permutation
             
     
     
-    def tabu_search(self, max_iter, max_vecinos, tabu_tenencia, aspiration_tol, limit_restart):
+    def tabu_search(self, max_iter, max_vecinos, limit_restart, 
+                    tabu_tenencia, aspiration_tol, prob_intensificacion):
         """Número de ciudades"""
         n = len(self.points)
         
@@ -217,11 +273,12 @@ class TSP:
             if restart:
                 u = random()
 
-                if (u < prob_bs):
+                if (u < prob_intensificacion):
                     neighbour = deepcopy(best_solution)
                 else: 
                     neighbour = Route(self._make_permutation(edge_freq), self.dist)
-
+                    edge_freq = array([[0]*n]*n)
+                    
                 restart = False
                 non_improving = 0                    
                     
@@ -229,7 +286,7 @@ class TSP:
             u_tabu, v_tabu = None, None
 
             
-            while i< max_iter and j < max_vecinos and not restart:     
+            while i < max_iter and j < max_vecinos and not restart:     
                 # Generamos los índices de los arcos a cambiar
                 candidate = deepcopy(neighbour)    
                 u = randint(0, n-1)
@@ -238,6 +295,9 @@ class TSP:
                 
                 eval_solution = True
                 
+                for (p,q) in candidate.get_edges():
+                    edge_freq[p,q] += 1;
+                    edge_freq[q,p] += 1
                 
                 # Si hay arcos comunes entre ambos
                 if (set([(u,v)]) & set(tabu_list)):
@@ -247,17 +307,15 @@ class TSP:
                     if candidate.cost < aspiration_tol*best_solution.cost:
                         eval_solution = True
                 
-                if eval_solution:
+                if eval_solution:                                       
                     if candidate.cost < best_neighbour.cost:
                         best_neighbour = deepcopy(candidate)
-                        u_tabu, v_tabu = u,v  
-
-                        for (p,q) in best_neighbour.get_edges():
-                            edge_freq[p,q] += 1;
-
+                        u_tabu, v_tabu = u,v     
+                 
                         if candidate.cost < best_solution.cost:
                             best_solution = deepcopy(candidate)                      
                             improvement = True
+                            
                     else:
                         non_improving += 1
                         restart = (non_improving == limit_restart)          
@@ -279,13 +337,29 @@ class TSP:
         return best_solution
 
 
-# In[179]:
+# Creamos las estructuras para almacenar las soluciones. Se harán 5 ejecuciones
+# de cada algoritmo (*SA, TS*) para obtener una media representativa de lo bueno
+# que es cada algoritmo a través del coste de las soluciones obtenidas
+# 
+# > **`files`** Almacenará los archivos .tsp a solucionar
+# 
+# > **`semillas`** Almacena las semillas para inicializar el generador de números aleatorios.
+# 
+# > **`sa_solutions`** Almacena las soluciones (objetos `Route`) obtenidos mediante *Simulated Annealing*. Almacena solo las soluciones de la última semilla, que serán las que se pinten
+# 
+# > **`ts_solutions`** Almacena las soluciones (objetos `Route`) obtenidos mediante *Tabu Search*. Almacena solo las soluciones de la última semilla, que serán las que se pinten
+
+# In[156]:
 
 files = ['berlin52.tsp', 'ch150.tsp', 'd198.tsp', 'eil101.tsp', 'rd400.tsp']
 semillas = [12345, 23451, 34512, 45123, 51234] 
-#semillas = [12345]
 
+# Almacena los problemas tsp
 problems = {}
+for f in files:
+    name = f[:-4]
+    problems[name] = TSP(f)
+    
 sa_solutions = {}
 ts_solutions = {}
 best_solutions = {'berlin52': 7542,
@@ -301,48 +375,100 @@ sa_costes = {'berlin52': 0.0,
 ts_costes = deepcopy(sa_costes)
 
 
+# ## ---------------------------------------
+
+# In[112]:
+
+f='eil101.tsp'
+semilla = 34512
+name = f[:-4]
+problems[name] = TSP(f)
+size = len(problems[name].points)
+n_iter = size*100
+aspiration_tol = 1
+limit_restart = 25
+max_vecinos = 25
+tabu_tenencia=int(size*0.3)
+prob_bs = 0.9
+
+
+seed(semilla)
+ts_solutions[name] = problems[name].tabu_search(n_iter, max_vecinos, 
+                                                limit_restart, tabu_tenencia, 
+                                                aspiration_tol, 0.95)
+print(ts_solutions[name].cost)
+
+
+# ## ---------------------------------------
+
+# Se obtienen las soluciones para el *Simulated Annealing* con esquema de enfriamiento geométrico, donde los mejores parámetros, de todos los probados han sido:
+# 
+# > **`n_iter`**: El número de iteraciones se fija en cien veces el tamaño del problema ($n$, número de ciudades)
+# 
+# > **`alpha`**: 0.95
+# 
+# > **`mu`**: 0.05
+# 
+# > **`phi`**: 0.05
+# 
+# También se otienen las soluciones para la *Búsqueda Tabú* con los parámetros siguientes:
+# 
+# > **`n_iter`**: El número de iteraciones se fija en cien veces el tamaño del problema ($n$, número de ciudades)
+# 
+# > **`max_vecinos`**: 25
+# 
+# > **`limit_restart`**: 25
+# 
+# > **`tabu_tenencia`**: El tamaño de la tenencia se fija en un 30% de $n$, número de ciudades del problema
+# 
+# > **`aspiration_tol`**: 1
+# 
+# > **`prob_intensificacion`**: 0.95
+# 
+
 # In[ ]:
 
-for f in files:
-    name = f[:-4]
-    problems[name] = TSP(f)
+alpha = 0.95
+mu = 0.05
+phi = 0.05
+
+for name in problems:
     size = len(problems[name].points)
     n_iter = size*100
-    alpha = 0.95
     
     for s in semillas:
         seed(s)
-        sa_solutions[name] = problems[name].simulated_annealing(size*1e3, n_iter, alpha, 0.05, 0.05) 
+        sa_solutions[name] = problems[name].simulated_annealing(n_iter, alpha, mu, phi) 
         sa_costes[name] += sa_solutions[name].cost
         
     sa_costes[name] /= len(semillas)
 
 
-# In[181]:
+# In[ ]:
 
-for f in files:
-    seed(semilla)
-    name = f[:-4]
-    problems[name] = TSP(f)
+max_vecinos = 25
+limit_restart = 25
+aspiration_tol = 1
+prob_intensificacion = 0.95
+
+for name in problems:
     size = len(problems[name].points)
     n_iter = size*100
-    aspiration_tol = 1.
-    limit_restart = 25
-    max_vecinos = 25
     tabu_tenencia=int(size*0.3)
-    prob_bs = 0.95
-    prob_greedy = 0.05
+    
 
     for s in semillas:
         seed(s)
-        ts_solutions[name] = problems[name].tabu_search(n_iter, max_vecinos, tabu_tenencia, aspiration_tol, limit_restart)
+        ts_solutions[name] = problems[name].tabu_search(n_iter, max_vecinos, 
+                                                        limit_restart, tabu_tenencia, 
+                                                        aspiration_tol, prob_intensificacion)
         ts_costes[name] += ts_solutions[name].cost
         
     ts_costes[name] /= len(semillas)
    
 
 
-# In[182]:
+# In[ ]:
 
 for name in problems:
     print (name 
