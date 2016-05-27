@@ -97,7 +97,12 @@ class Route:
 # >>> Resuelve el problema del viajante de comercio empleando un enfriamiento simulado con esquema geométrico, con operador de generación de vecino 2-opt de arcos, y selección de temperatura inicial a:
 #  $$T_0 = \frac{\mu}{-log(\phi)} \cdot Cost(S_0)  $$
 # >>> Esto es, un factor $\mu$ de probabilidad de tomar una solución $\phi$ veces peor que la inicial $S_0$
+# 
 # >>> **`n_iter`**: Número de evaluaciones que se hacen de la función objetivo
+# 
+# >>> **`max_exitos`**: Número de máximo de mejoras encontradas en un vecindario
+# 
+# >>> **`max_vecinos`**: Número de vecinos que se generarán en cada exploración de vecindario
 # 
 # >>> **`alpha`**: factor de descenso de la media geométrica $T_k = \alpha \cdot T_{k-1}$
 # 
@@ -132,7 +137,7 @@ class Route:
 # 
 # >>> **`prob_intensificacion`**: Probabilidad con la que tras un número **`limit_restart`** de vecinos que no mejoran, se intensificará la búsqueda sobre la mejor solución hasta el momento.
 
-# In[152]:
+# In[298]:
 
 class TSP:
     def __init__(self, file):
@@ -178,7 +183,7 @@ class TSP:
         
     
     
-    def simulated_annealing(self, max_iter, alpha, mu, phi):
+    def simulated_annealing(self, max_iter, max_exitos, max_vecinos, alpha, mu, phi):
         """Número de ciudades"""
         n = len(self.points)
         
@@ -193,32 +198,40 @@ class TSP:
         
         """Variables que controlan las iteraciones"""
         improvement = True
-        i=0
+        num_iter=0
         
         """Operador de vecino"""
         
         
-        while i < max_iter:
-            candidate = deepcopy(solution)
+        while num_iter < max_iter:
+            num_vecinos = 0
+            exitos = 0
             
-            # Generación de un vecino
-            u = randint(0, n-1)
-            v = randint(u+1, n)   
-            candidate.change_edges(u,v)
-            
-            diff_cost = candidate.cost - solution.cost
-            
-            
-            if (diff_cost < 0 or random() < exp(-diff_cost*1.0/t)):
-                solution = deepcopy(candidate)
-        
-                if (solution.cost < best_solution.cost):
-                    best_solution = deepcopy(solution)
+            while num_iter < max_iter and num_vecinos < max_vecinos and exitos < max_exitos:
+                # Generación de un vecino
+                candidate = deepcopy(solution)
+                u = randint(0, n)
+                v = randint(0, n)   
+                candidate.change_edges(u,v)
+                
+                diff_cost = candidate.cost - solution.cost
+
+
+                if (diff_cost < 0 or random() < exp(-diff_cost*1.0/t)):
+                    solution = deepcopy(candidate)
+                    exitos+=1
+                    
+                    if (solution.cost < best_solution.cost):
+                        best_solution = deepcopy(solution)
+                        
+                
+                num_iter+=1
+                num_vecinos+=1
             
             """Esquema de enfriamiento"""
             t = alpha*t
             
-            i+=1
+            
         
         return best_solution
     
@@ -289,8 +302,8 @@ class TSP:
             while i < max_iter and j < max_vecinos and not restart:     
                 # Generamos los índices de los arcos a cambiar
                 candidate = deepcopy(neighbour)    
-                u = randint(0, n-1)
-                v = randint(u+1, n)   
+                u = randint(0, n)
+                v = randint(0, n)   
                 candidate.change_edges(u,v)
                 
                 eval_solution = True
@@ -349,7 +362,7 @@ class TSP:
 # 
 # > **`ts_solutions`** Almacena las soluciones (objetos `Route`) obtenidos mediante *Tabu Search*. Almacena solo las soluciones de la última semilla, que serán las que se pinten
 
-# In[156]:
+# In[299]:
 
 files = ['berlin52.tsp', 'ch150.tsp', 'd198.tsp', 'eil101.tsp', 'rd400.tsp']
 semillas = [12345, 23451, 34512, 45123, 51234] 
@@ -375,35 +388,13 @@ sa_costes = {'berlin52': 0.0,
 ts_costes = deepcopy(sa_costes)
 
 
-# ## ---------------------------------------
-
-# In[112]:
-
-f='eil101.tsp'
-semilla = 34512
-name = f[:-4]
-problems[name] = TSP(f)
-size = len(problems[name].points)
-n_iter = size*100
-aspiration_tol = 1
-limit_restart = 25
-max_vecinos = 25
-tabu_tenencia=int(size*0.3)
-prob_bs = 0.9
-
-
-seed(semilla)
-ts_solutions[name] = problems[name].tabu_search(n_iter, max_vecinos, 
-                                                limit_restart, tabu_tenencia, 
-                                                aspiration_tol, 0.95)
-print(ts_solutions[name].cost)
-
-
-# ## ---------------------------------------
-
 # Se obtienen las soluciones para el *Simulated Annealing* con esquema de enfriamiento geométrico, donde los mejores parámetros, de todos los probados han sido:
 # 
 # > **`n_iter`**: El número de iteraciones se fija en cien veces el tamaño del problema ($n$, número de ciudades)
+# 
+# > **`max_vecinos`**: 10 $\cdot n$
+# 
+# > **`max_exitos`**: 0.1 $\cdot n$
 # 
 # > **`alpha`**: 0.95
 # 
@@ -426,25 +417,29 @@ print(ts_solutions[name].cost)
 # > **`prob_intensificacion`**: 0.95
 # 
 
-# In[ ]:
+# In[301]:
 
 alpha = 0.95
-mu = 0.05
-phi = 0.05
+mu = 0.1
+phi = 0.1
 
 for name in problems:
+    sa_costes[name] = 0
     size = len(problems[name].points)
     n_iter = size*100
+    max_exitos = size*0.1
+    max_vecinos = size*10
     
     for s in semillas:
         seed(s)
-        sa_solutions[name] = problems[name].simulated_annealing(n_iter, alpha, mu, phi) 
+        sa_solutions[name] = problems[name].simulated_annealing(n_iter, max_vecinos, 
+                                                                max_exitos, alpha, mu, phi) 
         sa_costes[name] += sa_solutions[name].cost
-        
+
     sa_costes[name] /= len(semillas)
 
 
-# In[ ]:
+# In[302]:
 
 max_vecinos = 25
 limit_restart = 25
@@ -452,9 +447,10 @@ aspiration_tol = 1
 prob_intensificacion = 0.95
 
 for name in problems:
+    ts_costes[name] = 0
     size = len(problems[name].points)
     n_iter = size*100
-    tabu_tenencia=int(size*0.3)
+    tabu_tenencia=int(size*2)
     
 
     for s in semillas:
@@ -468,7 +464,7 @@ for name in problems:
    
 
 
-# In[ ]:
+# In[303]:
 
 for name in problems:
     print (name 
