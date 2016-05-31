@@ -10,12 +10,12 @@
 # resolución aproximada mediante las metaheurísticas *Enfriamiento Simulado*
 # y *Búsqueda Tabú*
 
-# In[73]:
+# In[82]:
 
 get_ipython().magic(u'matplotlib inline')
 
 
-# In[74]:
+# In[83]:
 
 from numpy import *
 from random import *
@@ -45,13 +45,13 @@ import re
 # >>> Método que intercambia dos ciudades de la permutación
 # 
 # >> **`change_edges`**: 
-# >>> Método que permite intercambiar dos arcos de la permutación dados por su índice, donde si la permutación es [1,3,4], el arco 0-ésimo es (4,1) y el arco 1-ésimo es (1,3)
+# >>> Método que permite intercambiar dos arcos de la permutación.
 # 
 # >> **`get_edges`**: 
 # >>> Método que devuelve los arcos como tuplas de las ciudades que unen
 # 
 
-# In[75]:
+# In[84]:
 
 class Route:
 
@@ -140,7 +140,7 @@ class Route:
 # 
 # >>> **`prob_intensificacion`**: Probabilidad con la que tras un número **`limit_restart`** de vecinos que no mejoran, se intensificará la búsqueda sobre la mejor solución hasta el momento.
 
-# In[76]:
+# In[85]:
 
 class TSP:
     def __init__(self, file):
@@ -202,8 +202,6 @@ class TSP:
         """Variables que controlan las iteraciones"""
         improvement = True
         num_iter=0
-        
-        """Operador de vecino"""
         
         
         while num_iter < max_iter:
@@ -277,7 +275,7 @@ class TSP:
         index = cycle(range(len(tabu_list)))
         restart = False
         
-        """Lista de reinicialización"""
+        """Memoria de frecuencias"""
         non_improving = 0
         edge_freq = array([[0]*n]*n)
         i = 0
@@ -361,11 +359,11 @@ class TSP:
 # 
 # > **`semillas`** Almacena las semillas para inicializar el generador de números aleatorios.
 # 
-# > **`sa_solutions`** Almacena las soluciones (objetos `Route`) obtenidos mediante *Simulated Annealing*. Almacena solo las soluciones de la última semilla, que serán las que se pinten
+# > **`sa_solutions`** Almacena las soluciones (objetos `Route`) obtenidos mediante *Simulated Annealing*. Almacena solo las mejores soluciones para cada instancia.
 # 
-# > **`ts_solutions`** Almacena las soluciones (objetos `Route`) obtenidos mediante *Tabu Search*. Almacena solo las soluciones de la última semilla, que serán las que se pinten
+# > **`ts_solutions`** Almacena las soluciones (objetos `Route`) obtenidos mediante *Tabu Search*. Almacena solo las mejores soluciones para cada instancia
 
-# In[77]:
+# In[86]:
 
 files = ['berlin52.tsp', 'ch150.tsp', 'd198.tsp', 'eil101.tsp', 'rd400.tsp']
 semillas = [12345, 23451, 34512, 45123, 51234] 
@@ -401,9 +399,9 @@ ts_costes = deepcopy(sa_costes)
 # 
 # > **`alpha`**: 0.95
 # 
-# > **`mu`**: 0.05
+# > **`mu`**: 0.1
 # 
-# > **`phi`**: 0.05
+# > **`phi`**: 0.1
 # 
 # También se otienen las soluciones para la *Búsqueda Tabú* con los parámetros siguientes:
 # 
@@ -420,7 +418,7 @@ ts_costes = deepcopy(sa_costes)
 # > **`prob_intensificacion`**: 0.95
 # 
 
-# In[78]:
+# In[ ]:
 
 alpha = 0.95
 mu = 0.1
@@ -447,7 +445,7 @@ for name in problems:
     sa_costes[name] /= len(semillas)
 
 
-# In[79]:
+# In[ ]:
 
 max_vecinos = 25
 limit_restart = 25
@@ -477,7 +475,7 @@ for name in problems:
    
 
 
-# In[81]:
+# In[ ]:
 
 for name in problems:
     print (name 
