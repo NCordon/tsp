@@ -7,12 +7,12 @@
 # resolución aproximada mediante las metaheurísticas *Enfriamiento Simulado*
 # y *Búsqueda Tabú*
 
-# In[93]:
+# In[2]:
 
 get_ipython().magic(u'matplotlib inline')
 
 
-# In[94]:
+# In[3]:
 
 from numpy import *
 from random import *
@@ -48,7 +48,7 @@ import re
 # >>> Método que devuelve los arcos como tuplas de las ciudades que unen
 # 
 
-# In[95]:
+# In[4]:
 
 class Route:
         
@@ -137,7 +137,7 @@ class Route:
 # 
 # >>> **`prob_intensificacion`**: Probabilidad con la que tras un número **`limit_restart`** de vecinos que no mejoran, se intensificará la búsqueda sobre la mejor solución hasta el momento.
 
-# In[298]:
+# In[56]:
 
 class TSP:
     def __init__(self, file):
@@ -257,7 +257,18 @@ class TSP:
         return permutation
             
     
-    
+    def _make_restart(self, neighbour, best_solution, edge_freq, prob_intensificacion):
+        n = len(self.points)
+        u = random()
+        
+        if (u < prob_intensificacion):
+            result = deepcopy(best_solution)
+        else: 
+            result = Route(self._make_permutation(edge_freq), self.dist)
+            
+        return result
+            
+            
     def tabu_search(self, max_iter, max_vecinos, limit_restart, 
                     tabu_tenencia, aspiration_tol, prob_intensificacion):
         """Número de ciudades"""
@@ -282,7 +293,7 @@ class TSP:
         
         while i < max_iter:                
             j = 0
-            
+
             if restart:
                 u = random()
 
@@ -291,15 +302,16 @@ class TSP:
                 else: 
                     neighbour = Route(self._make_permutation(edge_freq), self.dist)
                     edge_freq = array([[0]*n]*n)
-                    
+                
                 restart = False
                 non_improving = 0                    
-                    
+            
             best_neighbour = deepcopy(neighbour)
             u_tabu, v_tabu = None, None
-
             
-            while i < max_iter and j < max_vecinos and not restart:     
+            
+            while i < max_iter and j < max_vecinos and not restart:  
+                #if (i%100==0): print(i)
                 # Generamos los índices de los arcos a cambiar
                 candidate = deepcopy(neighbour)    
                 u = randint(0, n)
@@ -362,7 +374,7 @@ class TSP:
 # 
 # > **`ts_solutions`** Almacena las soluciones (objetos `Route`) obtenidos mediante *Tabu Search*. Almacena solo las soluciones de la última semilla, que serán las que se pinten
 
-# In[299]:
+# In[57]:
 
 files = ['berlin52.tsp', 'ch150.tsp', 'd198.tsp', 'eil101.tsp', 'rd400.tsp']
 semillas = [12345, 23451, 34512, 45123, 51234] 
@@ -417,7 +429,7 @@ ts_costes = deepcopy(sa_costes)
 # > **`prob_intensificacion`**: 0.95
 # 
 
-# In[301]:
+# In[67]:
 
 alpha = 0.95
 mu = 0.1
@@ -429,17 +441,22 @@ for name in problems:
     n_iter = size*100
     max_exitos = size*0.1
     max_vecinos = size*10
+    best_cost = float("inf")
     
     for s in semillas:
         seed(s)
-        sa_solutions[name] = problems[name].simulated_annealing(n_iter, max_vecinos, 
-                                                                max_exitos, alpha, mu, phi) 
-        sa_costes[name] += sa_solutions[name].cost
+        current = problems[name].simulated_annealing(n_iter, max_vecinos, 
+                                                     max_exitos, alpha, mu, phi) 
+        if current.cost < best_cost:
+            sa_solutions[name] = deepcopy(current)
+            best_cost = current.cost
+        
+        sa_costes[name] += current.cost
 
     sa_costes[name] /= len(semillas)
 
 
-# In[302]:
+# In[66]:
 
 max_vecinos = 25
 limit_restart = 25
@@ -451,25 +468,32 @@ for name in problems:
     size = len(problems[name].points)
     n_iter = size*100
     tabu_tenencia=int(size*2)
-    
+    best_cost = float("inf")
 
     for s in semillas:
         seed(s)
-        ts_solutions[name] = problems[name].tabu_search(n_iter, max_vecinos, 
-                                                        limit_restart, tabu_tenencia, 
-                                                        aspiration_tol, prob_intensificacion)
-        ts_costes[name] += ts_solutions[name].cost
+        current = problems[name].tabu_search(n_iter, max_vecinos, 
+                                            limit_restart, tabu_tenencia, 
+                                            aspiration_tol, prob_intensificacion)
+        
+        if current.cost < best_cost:
+            ts_solutions[name] = deepcopy(current)
+            best_cost = current.cost
+            
+        ts_costes[name] += current.cost
         
     ts_costes[name] /= len(semillas)
    
 
 
-# In[303]:
+# In[69]:
 
 for name in problems:
     print (name 
-           + '\n\t SA: '   + str(sa_costes[name])
-           + '\n\t TS: '   + str(ts_costes[name])
+           + '\n\t SA(media): '   + str(sa_costes[name])
+           + '\n\t TS(media): '   + str(ts_costes[name])
+           + '\n\t SA(mejor): '   + str(sa_solutions[name].cost)
+           + '\n\t TS(mejor): '   + str(ts_solutions[name].cost)
            + '\n\t Best: ' + str(best_solutions[name]))
     problems[name].print_solution(sa_solutions[name])
     problems[name].print_solution(ts_solutions[name])

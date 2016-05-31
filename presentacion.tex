@@ -1,0 +1,182 @@
+\documentclass[ignorenonframetext,]{beamer}
+\setbeamertemplate{caption}[numbered]
+\setbeamertemplate{caption label separator}{:}
+\setbeamercolor{caption name}{fg=normal text.fg}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\usepackage{fixltx2e} % provides \textsubscript
+\usepackage{lmodern}
+\ifxetex
+  \usepackage{fontspec,xltxtra,xunicode}
+  \defaultfontfeatures{Mapping=tex-text,Scale=MatchLowercase}
+  \newcommand{\euro}{€}
+\else
+  \ifluatex
+    \usepackage{fontspec}
+    \defaultfontfeatures{Mapping=tex-text,Scale=MatchLowercase}
+    \newcommand{\euro}{€}
+  \else
+    \usepackage[T1]{fontenc}
+    \usepackage[utf8]{inputenc}
+      \fi
+\fi
+\geometry{paperwidth=200mm,paperheight=160mm}
+\usetheme{Berlin}
+\usecolortheme{beaver}
+% use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+% use microtype if available
+\IfFileExists{microtype.sty}{\usepackage{microtype}}{}
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\newenvironment{Shaded}{}{}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{\textbf{{#1}}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.56,0.13,0.00}{{#1}}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{{#1}}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{{#1}}}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{{#1}}}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{{#1}}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{{#1}}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textit{{#1}}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{{#1}}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{1.00,0.00,0.00}{\textbf{{#1}}}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.02,0.16,0.49}{{#1}}}
+\newcommand{\RegionMarkerTok}[1]{{#1}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{1.00,0.00,0.00}{\textbf{{#1}}}}
+\newcommand{\NormalTok}[1]{{#1}}
+
+% Comment these out if you don't want a slide with just the
+% part/section/subsection/subsubsection title:
+\AtBeginPart{
+  \let\insertpartnumber\relax
+  \let\partname\relax
+  \frame{\partpage}
+}
+\AtBeginSection{
+  \let\insertsectionnumber\relax
+  \let\sectionname\relax
+  \frame{\sectionpage}
+}
+\AtBeginSubsection{
+  \let\insertsubsectionnumber\relax
+  \let\subsectionname\relax
+  \frame{\subsectionpage}
+}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt plus 2pt minus 1pt}
+\setlength{\emergencystretch}{3em}  % prevent overfull lines
+\setcounter{secnumdepth}{0}
+
+
+\begin{document}
+
+\section{Travelling Salesman Problem}\label{travelling-salesman-problem}
+
+\textbf{Ignacio Cordón Castillo}, \emph{Doble Grado Matemáticas e
+Ingeniería Informática, Metaheurísticas, UGR}
+
+\begin{frame}[fragile]{Representación de soluciones}
+
+Definimos una solución como un objeto \texttt{Route}, que almacena una
+permutación de ciudades, una matriz de distancia, y contiene métodos de
+cálculo del coste y de 2-opt de arcos y ciudades
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{class} \NormalTok{Route:  }
+    \KeywordTok{def} \OtherTok{__init__}\NormalTok{(}\OtherTok{self}\NormalTok{, permutation, dist):}
+        \OtherTok{self}\NormalTok{.permutation = deepcopy(array(permutation))}
+        \OtherTok{self}\NormalTok{.dist = array(dist)}
+        \OtherTok{self}\NormalTok{.update_cost()}
+
+    \KeywordTok{def} \NormalTok{update_cost(}\OtherTok{self}\NormalTok{):}
+        \NormalTok{pairs = }\OtherTok{self}\NormalTok{.get_edges()}
+        \OtherTok{self}\NormalTok{.cost = }\DataTypeTok{sum}\NormalTok{([}\OtherTok{self}\NormalTok{.dist[x,y] }\KeywordTok{for} \NormalTok{(x,y) in pairs])}
+
+    \KeywordTok{def} \NormalTok{change_edges(}\OtherTok{self}\NormalTok{,i,j)}
+        \NormalTok{i,j = }\DataTypeTok{min}\NormalTok{(i,j), }\DataTypeTok{max}\NormalTok{(i,j)}
+
+        \NormalTok{rev = }\OtherTok{self}\NormalTok{.permutation[i:j]}
+        \NormalTok{rev = rev[::-}\DecValTok{1}\NormalTok{]}
+        \OtherTok{self}\NormalTok{.permutation[i:j] = rev}
+        \OtherTok{self}\NormalTok{.update_cost()}
+
+    \KeywordTok{def} \NormalTok{get_edges(}\OtherTok{self}\NormalTok{):}
+        \NormalTok{shifted = append(}\OtherTok{self}\NormalTok{.permutation[}\DecValTok{1}\NormalTok{:], [}\OtherTok{self}\NormalTok{.permutation[}\DecValTok{0}\NormalTok{]])}
+        \NormalTok{pairs = }\DataTypeTok{zip}\NormalTok{(}\OtherTok{self}\NormalTok{.permutation, shifted)}
+        \KeywordTok{return}\NormalTok{(pairs)}
+            
+\end{Highlighting}
+\end{Shaded}
+
+\end{frame}
+
+\begin{frame}{Enfriamiento simulado}
+
+Emplea esquema de enfriamiento geométrico, con operador de generación de
+vecino 2-opt de arcos, y selección de temperatura inicial a:
+
+\[T_0 = \frac{\mu}{-log(\phi)} \cdot Cost(S_0)  \]
+
+\begin{itemize}
+\item
+  \textbf{\texttt{n\_iter}}: Número de evaluaciones que se hacen de la
+  función objetivo
+\item
+  \textbf{\texttt{max\_exitos}}: Número de máximo de mejoras encontradas
+  en un vecindario
+\item
+  \textbf{\texttt{max\_vecinos}}: Número de vecinos que se generarán en
+  cada exploración de vecindario
+\item
+  \textbf{\texttt{alpha}}: factor de descenso de la media geométrica
+  $T_k = \alpha \cdot T_{k-1}$
+\item
+  \textbf{\texttt{mu}}
+\item
+  \textbf{\texttt{phi}}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}[fragile]{Enfriamiento simulado}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{def} \NormalTok{simulated_annealing(}\OtherTok{self}\NormalTok{, max_iter, max_exitos, max_vecinos, alpha, mu, phi):}
+        
+    \KeywordTok{while} \NormalTok{num_iter < max_iter:           }
+        \KeywordTok{while} \NormalTok{num_iter < max_iter and num_vecinos < max_vecinos and exitos < max_exitos:}
+
+            \NormalTok{candidate = deepcopy(solution)}
+            \NormalTok{u = randint(}\DecValTok{0}\NormalTok{, n)}
+            \NormalTok{v = randint(}\DecValTok{0}\NormalTok{, n)   }
+            \NormalTok{candidate.change_edges(u,v)}
+
+            \NormalTok{diff_cost = candidate.cost - solution.cost}
+
+            \KeywordTok{if} \NormalTok{(diff_cost < }\DecValTok{0} \NormalTok{or random() < exp(-diff_cost*}\FloatTok{1.0}\NormalTok{/t)):}
+                \NormalTok{solution = deepcopy(candidate)}
+                \NormalTok{exitos+=}\DecValTok{1}
+
+                \KeywordTok{if} \NormalTok{(solution.cost < best_solution.cost):}
+                    \NormalTok{best_solution = deepcopy(solution)}
+
+            \NormalTok{num_iter+=}\DecValTok{1}
+            \NormalTok{num_vecinos+=}\DecValTok{1}
+
+        \NormalTok{t = alpha*t}
+
+    \KeywordTok{return} \NormalTok{best_solution}
+    
+\end{Highlighting}
+\end{Shaded}
+
+\end{frame}
+
+\end{document}
