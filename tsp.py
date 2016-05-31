@@ -2,17 +2,20 @@
 # coding: utf-8
 
 # # Travelling Salesman Problem
+# 
+# ### Ignacio Cordón Castillo
+# ### Doble Grado Matemáticas, Ingeniería Informática, UGR
 
 # El problema consiste en modelar un problema de viajante de comercio con
 # resolución aproximada mediante las metaheurísticas *Enfriamiento Simulado*
 # y *Búsqueda Tabú*
 
-# In[2]:
+# In[73]:
 
 get_ipython().magic(u'matplotlib inline')
 
 
-# In[3]:
+# In[74]:
 
 from numpy import *
 from random import *
@@ -48,38 +51,38 @@ import re
 # >>> Método que devuelve los arcos como tuplas de las ciudades que unen
 # 
 
-# In[4]:
+# In[75]:
 
 class Route:
-        
-        def __init__(self, permutation, dist):
-            self.permutation = deepcopy(array(permutation))
-            self.dist = array(dist)
-            self.update_cost()
 
-        """Calculates cuadratic cost"""
-        def update_cost(self):
-            pairs = self.get_edges()
-            self.cost = sum([self.dist[x,y] for (x,y) in pairs])
-        
-        def change_positions(self,i,j):
-            # Intercambia dos ciudades del grafo
-            self.permutation[i], self.permutation[j] = self.permutation[j], self.permutation[i]
-            self.update_cost()
-            
-        def change_edges(self,i,j):
-            # Intercambia dos aristas del grafo
-            i,j = min(i,j), max(i,j)
-            
-            rev = self.permutation[i:j]
-            rev = rev[::-1]
-            self.permutation[i:j] = rev
-            self.update_cost()
-        
-        def get_edges(self):
-            shifted = append(self.permutation[1:], [self.permutation[0]])
-            pairs = zip(self.permutation, shifted)
-            return(pairs)
+    def __init__(self, permutation, dist):
+        self.permutation = deepcopy(array(permutation))
+        self.dist = array(dist)
+        self.update_cost()
+
+    """Calculates cuadratic cost"""
+    def update_cost(self):
+        pairs = self.get_edges()
+        self.cost = sum([self.dist[x,y] for (x,y) in pairs])
+
+    def change_positions(self,i,j):
+        # Intercambia dos ciudades del grafo
+        self.permutation[i], self.permutation[j] = self.permutation[j], self.permutation[i]
+        self.update_cost()
+
+    def change_edges(self,i,j):
+        # Intercambia dos aristas del grafo
+        i,j = min(i,j), max(i,j)
+
+        rev = self.permutation[i:j]
+        rev = rev[::-1]
+        self.permutation[i:j] = rev
+        self.update_cost()
+
+    def get_edges(self):
+        shifted = append(self.permutation[1:], [self.permutation[0]])
+        pairs = zip(self.permutation, shifted)
+        return(pairs)
             
 
 
@@ -137,7 +140,7 @@ class Route:
 # 
 # >>> **`prob_intensificacion`**: Probabilidad con la que tras un número **`limit_restart`** de vecinos que no mejoran, se intensificará la búsqueda sobre la mejor solución hasta el momento.
 
-# In[56]:
+# In[76]:
 
 class TSP:
     def __init__(self, file):
@@ -256,17 +259,6 @@ class TSP:
 
         return permutation
             
-    
-    def _make_restart(self, neighbour, best_solution, edge_freq, prob_intensificacion):
-        n = len(self.points)
-        u = random()
-        
-        if (u < prob_intensificacion):
-            result = deepcopy(best_solution)
-        else: 
-            result = Route(self._make_permutation(edge_freq), self.dist)
-            
-        return result
             
             
     def tabu_search(self, max_iter, max_vecinos, limit_restart, 
@@ -311,7 +303,6 @@ class TSP:
             
             
             while i < max_iter and j < max_vecinos and not restart:  
-                #if (i%100==0): print(i)
                 # Generamos los índices de los arcos a cambiar
                 candidate = deepcopy(neighbour)    
                 u = randint(0, n)
@@ -374,7 +365,7 @@ class TSP:
 # 
 # > **`ts_solutions`** Almacena las soluciones (objetos `Route`) obtenidos mediante *Tabu Search*. Almacena solo las soluciones de la última semilla, que serán las que se pinten
 
-# In[57]:
+# In[77]:
 
 files = ['berlin52.tsp', 'ch150.tsp', 'd198.tsp', 'eil101.tsp', 'rd400.tsp']
 semillas = [12345, 23451, 34512, 45123, 51234] 
@@ -422,14 +413,14 @@ ts_costes = deepcopy(sa_costes)
 # 
 # > **`limit_restart`**: 25
 # 
-# > **`tabu_tenencia`**: El tamaño de la tenencia se fija en un 30% de $n$, número de ciudades del problema
+# > **`tabu_tenencia`**: El tamaño de la tenencia se fija en el doble de $n$, número de ciudades del problema
 # 
 # > **`aspiration_tol`**: 1
 # 
 # > **`prob_intensificacion`**: 0.95
 # 
 
-# In[67]:
+# In[78]:
 
 alpha = 0.95
 mu = 0.1
@@ -456,7 +447,7 @@ for name in problems:
     sa_costes[name] /= len(semillas)
 
 
-# In[66]:
+# In[79]:
 
 max_vecinos = 25
 limit_restart = 25
@@ -486,7 +477,7 @@ for name in problems:
    
 
 
-# In[69]:
+# In[81]:
 
 for name in problems:
     print (name 
